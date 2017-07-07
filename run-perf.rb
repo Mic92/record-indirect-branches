@@ -3,7 +3,6 @@ require "json"
 require "optparse"
 require "set"
 require "fileutils"
-require "pry"
 
 def safe_write(path, content)
   dir = File.dirname(path)
