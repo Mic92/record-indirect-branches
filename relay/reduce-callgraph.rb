@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 
-require "pry"
 require "json"
 require "set"
+require "fileutils"
 
 def parse_function_node(node)
   function_name, type, function_id = node.split(':')
