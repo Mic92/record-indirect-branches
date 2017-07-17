@@ -15,10 +15,13 @@ end
 
 def parse_relay_callgraph(path)
   callgraph = open(path).map do |line|
-    filename, function_node, callees_token = line.strip.split('$')
+    filename, function_node, *callees_token = line.strip.split('$')
     callees = []
+    callees_token = callees_token.join("")
+    function = parse_function_node(function_node)
+
     unless callees_token.nil?
-      callees_token.scan(/(false|true):\((\d+, \d+)\){([^}]+)}/) do |is_indirect_token, position, node|
+      callees_token.scan(/(false|true):\((\d+, \d+)\){([^}]*)}/) do |is_indirect_token, position, node|
         is_indirect = is_indirect_token == "true"
         nodes = if is_indirect
                   node.split("/")
@@ -100,19 +103,20 @@ def optimize_callgraph(callgraph, edges)
         observed_targets.include?(node_name)
       end
       if new_nodes.empty?
-        #puts("function_name: #{function[:function_name]}")
-        #puts("callee type: #{callee[:nodes].first[:function_type]}")
-        #puts("computed: #{callee[:nodes].map {|node| node[:function_name]}.join(" ")}")
-        #puts("seen: #{observed_targets.to_a.join(" ")}")
-        #puts("------------------------")
+        puts("function_name: #{function[:function_name]}")
+        next if callee[:nodes].empty?
+        puts("callee type: #{callee[:nodes].first[:function_type]}")
+        puts("computed: #{callee[:nodes].map {|node| node[:function_name]}.join(" ")}")
+        puts("seen: #{observed_targets.to_a.join(" ")}")
+        puts("------------------------")
         stats[:empty_indirect_calls] += 1
       else
         stats[:original_targets] += callee[:nodes].size
         stats[:reduced_targets] += new_nodes.size
         stats[:call_target_reduction] += new_nodes.size.to_f / callee[:nodes].size
         stats[:call_sites] += 1
+        callee[:nodes] = new_nodes
       end
-      callee[:nodes] = new_nodes
     end
   end
   stats[:call_target_reduction] /= stats[:call_sites]
@@ -135,7 +139,7 @@ def main(args)
   puts("functions with indirect calls: #{functions_with_indirect_calls.size} (#{percent.round(3)}%)")
 
   indirect_calls = JSON.load(open(args[1]))
-  optimize_callgraph(callgraph, indirect_calls["edges"])
+  callgraph = optimize_callgraph(callgraph, indirect_calls["edges"])
 
   atomic_write(args[2]) do |file|
     write_relay_callgraph(callgraph, file)
