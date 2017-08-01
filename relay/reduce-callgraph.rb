@@ -94,6 +94,8 @@ def optimize_callgraph(callgraph, edges)
     observed_callgraph[normalized_function_name(edge[0])] << normalized_function_name(edge[1])
   end
 
+  # functions_by_name = Hash[callgraph.collect {|function|  [function[:function_name], function]}]
+
   callgraph.each do |function|
     observed_targets = observed_callgraph[normalized_function_name(function[:function_name])]
     function[:callees].each do |callee|
@@ -102,6 +104,21 @@ def optimize_callgraph(callgraph, edges)
         node_name = normalized_function_name(node[:function_name])
         observed_targets.include?(node_name)
       end
+
+      #if new_nodes.empty?
+      #  new_nodes = observed_targets.map do |target|
+      #    guess = functions_by_name[target]
+      #    next if guess.nil?
+      #    guessed_parameters = guess[:function_type].count(",")
+      #    actual_parameters = callee[:nodes].first[:function_type].count(",")
+      #    if actual_parameters == guessed_parameters
+      #      guess
+      #    else
+      #      nil
+      #    end
+      #  end.compact
+      #end
+
       if new_nodes.empty?
         puts("function_name: #{function[:function_name]}")
         next if callee[:nodes].empty?
